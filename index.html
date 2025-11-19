@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TextDiffy — Browser Text Diff Tool</title>
+  <meta name="description" content="Compare two texts in your browser. No servers. No tracking. Pure HTML/CSS/JS." />
+  <link rel="stylesheet" href="./css/styles.min.css" />
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <h1>TextDiffy</h1>
+    <p class="subtitle">Fast, private, client‑only text diffs</p>
+  </header>
+
+  <section class="controls" aria-label="Diff Settings and Actions">
+    <div class="settings">
+      <label class="switch">
+        <input id="whitespaceSensitive" type="checkbox" aria-label="Whitespace sensitivity" checked />
+        <span>Whitespace sensitive</span>
+      </label>
+      <label class="switch">
+        <input id="caseSensitive" type="checkbox" aria-label="Case sensitivity" checked />
+        <span>Case sensitive</span>
+      </label>
+      <label for="granularity" class="switch">
+        <span>Granularity</span>
+        <select id="granularity" aria-label="Diff granularity">
+          <option value="line">line</option>
+          <option value="word">word</option>
+          <option value="char">character</option>
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button id="compareBtn" class="btn primary" aria-label="Compare inputs" data-test-id="btn-compare">Compare</button>
+      <button id="copyBtn" class="btn" aria-label="Copy output to clipboard" data-test-id="btn-copy">Copy Output to Clipboard</button>
+      <button id="exportBtn" class="btn" aria-label="Export results as text file" data-test-id="btn-export">Export as Text File</button>
+    </div>
+  </section>
+
+  <main class="grid" role="main">
+    <section class="panel" aria-label="Input A">
+      <header class="panel-header">
+        <h2>Input A</h2>
+      </header>
+      <textarea id="inputA" aria-label="Text input A" placeholder="Paste or type text A here…" spellcheck="false"></textarea>
+    </section>
+
+    <section class="panel" aria-label="Input B">
+      <header class="panel-header">
+        <h2>Input B</h2>
+      </header>
+      <textarea id="inputB" aria-label="Text input B" placeholder="Paste or type text B here…" spellcheck="false"></textarea>
+    </section>
+
+    <section class="panel" aria-label="Diff Output">
+      <header class="panel-header">
+        <h2>Diff Output</h2>
+        <div class="metrics" aria-live="polite">
+          <span><strong>Added:</strong> <span id="total-added">0</span></span>
+          <span><strong>Removed:</strong> <span id="total-removed">0</span></span>
+          <span><strong>Modified:</strong> <span id="total-modified">0</span></span>
+        </div>
+      </header>
+      <div id="diffOutput" class="diff-output" role="region" aria-label="Diff results" tabindex="0"></div>
+    </section>
+  </main>
+
+  <noscript>
+    <p class="no-js">This application requires JavaScript to run the diff locally in your browser.</p>
+  </noscript>
+
+  <footer class="app-footer" role="contentinfo">
+    <p>Works entirely offline in your browser. No data leaves your device.</p>
+  </footer>
+
+  <script src="./js/app.iife.min.js" defer></script>
+</body>
+</html>

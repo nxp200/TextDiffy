@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TextDiffy Tests</title>
+  <link rel="stylesheet" href="../css/styles.min.css" />
+  <script src="../js/app.iife.min.js" defer></script>
+  <style>body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto} .pass{color:green} .fail{color:red}</style>
+</head>
+<body>
+  <h1>TextDiffy — Test Runner</h1>
+  <div id="results"></div>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { __internals, buildStructuredDiff, serializePlain, updateMetrics } = window.TextDiffy;
+      const results = document.getElementById('results');
+      const log = (ok, name, details='') => {
+        const p = document.createElement('p');
+        p.className = ok ? 'pass' : 'fail';
+        p.textContent = (ok ? '✓ ' : '✗ ') + name + (details ? ' — ' + details : '');
+        results.appendChild(p);
+      };
+
+      const { splitLines, normalizeLine, patienceDiff } = __internals;
+
+      // Tests
+      try {
+        // Empty inputs
+        let d = await buildStructuredDiff('', '', { whitespaceSensitive:true, caseSensitive:true, granularity:'line' });
+        log(d.length===1 && d[0].type==='same' && d[0].line==='', 'Empty inputs produce single empty same line');
+
+        // Identical
+        d = await buildStructuredDiff('a\nb', 'a\nb', { whitespaceSensitive:true, caseSensitive:true, granularity:'line' });
+        log(d.filter(x=>x.type==='same').length===2, 'Identical inputs are all same');
+
+        // Add/remove
+        d = await buildStructuredDiff('a\nb', 'a\nb\nc', { whitespaceSensitive:true, caseSensitive:true, granularity:'line' });
+        log(d.some(x=>x.type==='add') && !d.some(x=>x.type==='remove'), 'Simple add detected');
+
+        d = await buildStructuredDiff('a\nb\nc', 'a\nb', { whitespaceSensitive:true, caseSensitive:true, granularity:'line' });
+        log(d.some(x=>x.type==='remove') && !d.some(x=>x.type==='add'), 'Simple remove detected');
+
+        // Modify word-level
+        d = await buildStructuredDiff('hello world', 'hello brave world', { whitespaceSensitive:true, caseSensitive:true, granularity:'word' });
+        log(d.some(x=>x.type==='modify'), 'Modify detected');
+
+        // Case/whitespace normalization
+        const n1 = normalizeLine(' Foo   Bar ', { whitespaceSensitive:false, caseSensitive:false });
+        log(n1==='foo bar', 'Normalization collapses ws and lowercases');
+
+        // Performance smoke
+        const bigA = Array.from({length:5000}, (_,i)=>'line '+i).join('\n');
+        const bigB = Array.from({length:5000}, (_,i)=> i===2500 ? 'line X' : 'line '+i).join('\n');
+        const t0 = performance.now();
+        d = await buildStructuredDiff(bigA, bigB, { whitespaceSensitive:true, caseSensitive:true, granularity:'line' });
+        const t1 = performance.now();
+        log((t1-t0) < 2000, 'Large input completes under 2s', Math.round(t1-t0)+'ms');
+
+        // Serialize format
+        const s = serializePlain(d);
+        log(typeof s==='string' && s.includes('line X'), 'Serialization produces text');
+
+        // Metrics correctness
+        // Create metric elements expected by updateMetrics
+        const added = document.createElement('span'); added.id='total-added'; document.body.appendChild(added);
+        const removed = document.createElement('span'); removed.id='total-removed'; document.body.appendChild(removed);
+        const modified = document.createElement('span'); modified.id='total-modified'; document.body.appendChild(modified);
+        const mdata = [
+          {type:'same', line:'a'},
+          {type:'add', line:'b'},
+          {type:'remove', line:'c'},
+          {type:'modify', old:'d', new:'e', parts:[{type:'remove', text:'d'},{type:'add', text:'e'}]},
+        ];
+        updateMetrics(mdata);
+        log(added.textContent==='1' && removed.textContent==='1' && modified.textContent==='1', 'Metrics update correctly');
+
+        // Unicode / emoji safety at char-level
+        d = await buildStructuredDiff('😀 cat', '😺 cat', { whitespaceSensitive:true, caseSensitive:true, granularity:'char' });
+        log(d.some(x=>x.type==='modify'), 'Emoji char-level modify detected');
+      } catch (e) {
+        log(false, 'Unexpected error', String(e));
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
